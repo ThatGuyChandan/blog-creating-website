@@ -1,0 +1,515 @@
+* {
+  box-sizing: border-box;
+}
+body {
+  color: #222;
+}
+img {
+  max-width: 100%;
+}
+a {
+  cursor: pointer;
+}
+/* navbar */
+main {
+  padding: 10px;
+  max-width: 900px;
+  margin: 0 auto;
+  margin-top: 5%;
+}
+.head {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background-color: rgba(15, 12, 12, 0.8); /* Transparent black background */
+  transition: background-color 0.3s;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 40px;
+}
+
+.head a {
+  text-decoration: none;
+  font-size: 1.3rem;
+  position: relative; /* Add this property for positioning */
+  color: #fff; /* Set the text color to white */
+}
+
+.head a::before {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  bottom: 0;
+  left: 0;
+  background-color: #007bff;
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.3s;
+}
+
+.head a:hover::before {
+  transform: scaleX(1);
+}
+
+nav a {
+  font-weight: lighter;
+  font-size: 1.3rem;
+}
+.logo {
+  font-weight: bold;
+  font-size: 1.5rem;
+}
+nav {
+  display: flex;
+  gap: 20px;
+}
+
+/* Content styles */
+.content-container {
+  margin-top: 50px;
+}
+
+.post {
+  display: flex;
+  gap: 20px;
+  background-color: #fff;
+  border-radius: 5px;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.image {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  border-radius: 5px 0 0 5px;
+}
+
+.image img {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  border-radius: 5px 0 0 5px;
+}
+
+.content-details {
+  flex: 2;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.post-title {
+  font-size: 1.8rem;
+  margin: 0;
+  color: #333;
+}
+
+.post-info {
+  color: #888;
+  font-size: 0.9rem;
+  margin-top: 5px;
+}
+
+.author {
+  font-weight: bold;
+  margin-right: 10px;
+  color: #555;
+}
+
+.post-date {
+  color: #777;
+}
+
+.post-summary {
+  font-size: 1rem;
+  margin-top: 10px;
+  color: #444;
+}
+/* Login.css */
+form.login {
+  max-width: 400px;
+  margin: 0 auto;
+  margin-top: 5%;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+}
+
+form.login h1 {
+  text-align: center;
+  font-size: 24px;
+}
+
+form.login label {
+  display: block;
+  margin: 10px 0;
+}
+
+form.login input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: #fff;
+  font-size: 16px;
+  margin: 5px 0;
+}
+
+form.login button {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  background-color: #007bff;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+form.login button:hover {
+  background-color: #0056b3;
+}
+
+form.login a {
+  text-align: center;
+  display: block;
+  margin-top: 10px;
+  text-decoration: none;
+  color: #007bff;
+  font-weight: bold;
+}
+
+form.login p.error {
+  color: red;
+  margin: 10px 0;
+  text-align: center;
+}
+
+/* Register */
+form.register {
+  max-width: 400px;
+  margin: 0 auto;
+  margin-top: 5%;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+}
+
+form.register h1 {
+  text-align: center;
+  font-size: 24px;
+}
+
+form.register label {
+  display: block;
+  margin: 10px 0;
+}
+
+form.register input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: #fff;
+  font-size: 16px;
+  margin: 5px 0;
+}
+
+form.register button {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  background-color: #007bff;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+form.register button:hover {
+  background-color: #0056b3;
+}
+
+form.register a {
+  text-align: center;
+  display: block;
+  margin-top: 10px;
+  text-decoration: none;
+  color: #007bff;
+  font-weight: bold;
+}
+
+form.register p.error {
+  color: red;
+  margin: 10px 0;
+  text-align: center;
+}
+/* CreatePost*/
+.create-post {
+  max-width: 600px;
+  margin: 0 auto;
+  margin-top: 5%;
+  padding: 20px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+}
+
+.create-post h2 {
+  text-align: center;
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+.create-post form {
+  display: flex;
+  flex-direction: column;
+}
+
+.create-post input,
+.create-post button {
+  margin-bottom: 10px;
+}
+
+.create-post button {
+  background-color: #007bff;
+  color: #fff;
+  font-size: 16px;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.create-post button:hover {
+  background-color: #0056b3;
+}
+
+/* InnerContent */
+div.innerContent div.innerImage {
+  max-height: none;
+}
+
+div.innerContent h1 {
+  text-align: center;
+  margin: 10px 0 5px;
+}
+
+div.innerContent div.innerImage img {
+  object-fit: cover; /* Ensure the image covers the container */
+  width: 100%; /* Cover width-wise */
+  max-height: 150px; /* Adjust the max-height as needed to make it shorter */
+}
+
+div.innerContent a {
+  text-decoration: none;
+}
+.editBtn {
+  background-color: #007bff;
+  color: #f4e8e8;
+  padding: 3px 3px;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: bold;
+}
+.editBtn:hover {
+  background-color: #0056b3;
+}
+div.innerContent time {
+  text-align: center;
+  display: block;
+  font-size: 0.8rem;
+  color: #aaa;
+}
+
+div.innerContent .author {
+  text-align: center;
+}
+/* Back to top arrow  */
+.back-to-top {
+  position: fixed;
+  bottom: 100px;
+  right: 20px;
+  display: none;
+  cursor: pointer;
+}
+
+.back-to-top.visible {
+  display: block;
+}
+
+.back-to-top span {
+  text-decoration: none;
+  color: #fff;
+  background-color: #171819;
+  padding: 10px 15px;
+  border-radius: 50%;
+}
+
+/* Footer styles */
+.footer {
+  background-color: rgba(27, 22, 22, 0.8);
+  color: #fff;
+  padding: 20px 0;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%; /* Ensure the footer spans the entire width of the viewport */
+  z-index: 1;
+}
+
+.fcontainer {
+  max-width: 900px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.footer p {
+  font-size: 0.9rem;
+  margin: 0;
+  padding: 10px 0;
+}
+/* NotFound */
+.conta {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 70vh;
+  text-align: center;
+}
+
+.conta h1 {
+  color: red;
+  font-size: 36px;
+}
+
+.conta p {
+  font-size: 18px;
+}
+
+/* Default styles for screens wider than 930px */
+/* Add your existing CSS here */
+
+@media screen and (max-width: 930px) {
+  /* Styles for screens between 930px and 500px */
+  main {
+    padding: 5px; /* Reduce padding for smaller screens */
+    max-width: 100%; /* Allow content to take the full width */
+  }
+
+  .head {
+    padding: 20px; /* Adjust the header padding */
+  }
+
+  .head a {
+    font-size: 1rem; /* Reduce font size for smaller screens */
+  }
+
+  .post {
+    flex-direction: column; /* Stack posts vertically on smaller screens */
+  }
+
+  .image {
+    flex: none;
+    border-radius: 5px;
+    height: 300px;
+  }
+
+  .image img {
+    border-radius: 5px; /* Reset image border-radius */
+  }
+
+  .content-details {
+    flex: none; /* Disable content flex for smaller screens */
+    padding: 10px; /* Adjust content padding */
+  }
+
+  .post-title {
+    font-size: 1.5rem;
+  }
+
+  .post-info {
+    font-size: 0.8rem;
+  }
+
+  .create-post {
+    max-width: 100%;
+  }
+  form.login,
+  form.register {
+    max-width: 100%;
+    margin-top: 5%;
+  }
+  form.login h1,
+  form.register h1 {
+    font-size: 18px;
+  }
+  form.login label,
+  form.register label {
+    margin: 5px 0;
+  }
+  form.login input,
+  form.register input {
+    padding: 10px;
+    font-size: 14px;
+  }
+  form.login button,
+  form.register button {
+    font-size: 14px;
+  }
+  form.login p.error,
+  form.register p.error {
+    font-size: 14px;
+  }
+}
+
+@media screen and (max-width: 500px) {
+  main {
+    margin-top: 10%; /* Increase top margin for smaller screens */
+  }
+
+  .head {
+    padding: 10px; /* Further reduce header padding */
+  }
+
+  .head a {
+    font-size: 0.9rem; /* Reduce font size for even smaller screens */
+  }
+  .image {
+    flex: none;
+    border-radius: 5px;
+    height: 200px;
+  }
+  .content-details {
+    flex: none;
+    padding: 8px;
+  }
+  .post-title {
+    font-size: 1.2rem; /* Reduce post title font size */
+  }
+
+  .post-info {
+    font-size: 0.6rem; /* Reduce post info font size */
+  }
+  .editBtn {
+    font-size: 0.7rem;
+  }
+  .logo {
+    font-size: 1.2rem; /* Adjust logo font size */
+  }
+}
