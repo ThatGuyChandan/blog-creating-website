@@ -358,10 +358,21 @@ div.innerContent .author {
   padding: 10px 15px;
   border-radius: 50%;
 }
-
+/*logout btn*/
+.logoutBtn {
+  background: none;
+  border: none;
+  color: #ccc;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: 0.5s;
+}
+.logoutBtn:hover {
+  background-color: #0056b3;
+}
 /* Footer styles */
 .footer {
-  background-color: rgba(27, 22, 22, 0.8);
+  background-color: rgba(27, 22, 22, 0.5);
   color: #fff;
   padding: 20px 0;
   position: fixed;
@@ -402,11 +413,7 @@ div.innerContent .author {
   font-size: 18px;
 }
 
-/* Default styles for screens wider than 930px */
-/* Add your existing CSS here */
-
 @media screen and (max-width: 930px) {
-  /* Styles for screens between 930px and 500px */
   main {
     padding: 5px; /* Reduce padding for smaller screens */
     max-width: 100%; /* Allow content to take the full width */
@@ -476,6 +483,9 @@ div.innerContent .author {
   form.register p.error {
     font-size: 14px;
   }
+  .logoutBtn {
+    font-size: 1rem;
+  }
 }
 
 @media screen and (max-width: 500px) {
@@ -511,5 +521,8 @@ div.innerContent .author {
   }
   .logo {
     font-size: 1.2rem; /* Adjust logo font size */
+  }
+  .logoutBtn {
+    font-size: 0.9rem;
   }
 }

@@ -33,7 +33,9 @@ const Navbar = () => {
         {username && (
           <>
             <Link to="/create">Create post</Link>
-            <button onClick={logout}>Logout</button>
+            <button className="logoutBtn" onClick={logout}>
+              Logout
+            </button>
           </>
         )}
         {!username && (

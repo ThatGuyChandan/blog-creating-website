@@ -4,7 +4,6 @@ const Post = require("./models/Post");
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const salt = bcrypt.genSaltSync(10);
-const secret = "your_secret_key";
 const app = express();
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
@@ -14,6 +13,7 @@ const uploadMiddelware = multer({ dest: "uploads/" });
 const fs = require("fs");
 const port = 4000;
 require("dotenv").config();
+const secret = process.env.JWT_SECRET;
 
 mongoose
   .connect(process.env.MONGODB_URI, {
