@@ -14,7 +14,7 @@ const fs = require("fs");
 const port = 4000;
 require("dotenv").config();
 const secret = process.env.JWT_SECRET;
-
+const BASE_URL = process.env.BASE_URL;
 mongoose
   .connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
@@ -28,7 +28,7 @@ mongoose
   });
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: `${BASE_URL}`,
     credentials: true,
   })
 );
