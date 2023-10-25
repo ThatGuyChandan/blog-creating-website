@@ -11,8 +11,8 @@ const cookieParser = require("cookie-parser");
 const multer = require("multer");
 const uploadMiddelware = multer({ dest: "uploads/" });
 const fs = require("fs");
-const port = 4000;
 require("dotenv").config();
+const port = process.env.PORT || 4000;
 const secret = process.env.JWT_SECRET;
 const BASE_URL = process.env.BASE_URL;
 mongoose
