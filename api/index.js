@@ -13,8 +13,8 @@ const uploadMiddelware = multer({ dest: "uploads/" });
 const fs = require("fs");
 require("dotenv").config();
 const port = process.env.PORT || 4000;
-const secret = process.env.JWT_SECRET;
-const BASE_URL = process.env.BASE_URL;
+const jwt_secret = process.env.JWT_SECRET;
+const secret = `${jwt_secret}`;
 mongoose
   .connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
@@ -28,7 +28,7 @@ mongoose
   });
 app.use(
   cors({
-    origin: `${BASE_URL}`,
+    origin: "http://localhost:3000",
     credentials: true,
   })
 );
