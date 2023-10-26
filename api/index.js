@@ -13,6 +13,7 @@ const uploadMiddelware = multer({ dest: "uploads/" });
 const fs = require("fs");
 require("dotenv").config();
 const port = process.env.PORT || 4000;
+const baseUrl = process.env.Base_URL;
 const jwt_secret = process.env.JWT_SECRET;
 const secret = `${jwt_secret}`;
 mongoose
@@ -28,7 +29,7 @@ mongoose
   });
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: `${baseUrl}`,
     credentials: true,
   })
 );
