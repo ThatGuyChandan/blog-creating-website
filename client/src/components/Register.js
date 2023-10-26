@@ -9,11 +9,14 @@ const Register = () => {
   async function register(ev) {
     ev.preventDefault();
 
-    const response = await fetch("http://localhost:4000/register", {
-      method: "POST",
-      body: JSON.stringify({ username, password }),
-      headers: { "Content-Type": "application/json" },
-    });
+    const response = await fetch(
+      "https://blogcreationbackend.onrender.com/register",
+      {
+        method: "POST",
+        body: JSON.stringify({ username, password }),
+        headers: { "Content-Type": "application/json" },
+      }
+    );
 
     if (response.status === 201) {
       alert("Registration successful");

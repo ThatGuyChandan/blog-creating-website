@@ -169,3 +169,4 @@ app.get("/post/:id", async (req, res) => {
 app.listen(port, () => {
   console.log(`Server is listening on port ${port}`);
 });
+// npm i bcryptjs cookie-parser cors dotenv express jsonwebtoken mongodb mongoose multer nodemon
