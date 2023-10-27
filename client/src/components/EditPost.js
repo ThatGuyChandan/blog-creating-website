@@ -44,15 +44,13 @@ function EditPost() {
   const [redirect, setRedirect] = useState(false);
 
   useEffect(() => {
-    fetch("https://blogcreationbackend.onrender.com/post/" + id).then(
-      (response) => {
-        response.json().then((postInfo) => {
-          setTitle(postInfo.title);
-          setSummary(postInfo.summary);
-          setContent(postInfo.content);
-        });
-      }
-    );
+    fetch("http://localhost:4000/post/" + id).then((response) => {
+      response.json().then((postInfo) => {
+        setTitle(postInfo.title);
+        setSummary(postInfo.summary);
+        setContent(postInfo.content);
+      });
+    });
   }, [id]);
 
   async function editPost(ev) {
@@ -66,14 +64,11 @@ function EditPost() {
       data.set("file", files?.[0]);
     }
 
-    const response = await fetch(
-      "https://blogcreationbackend.onrender.com/post",
-      {
-        method: "PUT",
-        body: data,
-        credentials: "include",
-      }
-    );
+    const response = await fetch("http://localhost:4000/post", {
+      method: "PUT",
+      body: data,
+      credentials: "include",
+    });
     if (response.ok) {
       setRedirect(true);
     }

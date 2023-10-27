@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Navigate } from "react-router-dom";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
-import "react-quill/dist/quill.bubble.css";
 
 const modules = {
   toolbar: [
@@ -16,7 +15,7 @@ const modules = {
     [{ size: ["small", false, "large", "huge"] }],
     [{ header: [1, 2, 3, 4, 5, 6, false] }],
     [{ color: [] }, { background: [] }],
-    ["image"],
+    ["link", "image", "video"], // Include image and video options
     ["clean"],
   ],
 };
@@ -32,7 +31,7 @@ const formats = [
   [{ size: ["small", false, "large", "huge"] }],
   [{ header: [1, 2, 3, 4, 5, 6, false] }],
   [{ color: [] }, { background: [] }],
-  ["link", "image"],
+  ["link", "image", "video"], // Include image and video options
 ];
 
 function CreatePost() {
@@ -50,14 +49,11 @@ function CreatePost() {
     data.set("file", files[0]);
     ev.preventDefault();
 
-    const response = await fetch(
-      "https://blogcreationbackend.onrender.com/post",
-      {
-        method: "POST",
-        body: data,
-        credentials: "include",
-      }
-    );
+    const response = await fetch("http://localhost:4000/post", {
+      method: "POST",
+      body: data,
+      credentials: "include",
+    });
 
     if (response.ok) {
       setRedirect(true);

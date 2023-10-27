@@ -8,13 +8,11 @@ function MainContent() {
   const [postInfo, setPostInfo] = useState(null);
   const { userInfo } = useContext(UserContext);
   useEffect(() => {
-    fetch(`https://blogcreationbackend.onrender.com/post/${id}`).then(
-      (response) => {
-        response.json().then((postInfo) => {
-          setPostInfo(postInfo);
-        });
-      }
-    );
+    fetch(`http://localhost:4000/post/${id}`).then((response) => {
+      response.json().then((postInfo) => {
+        setPostInfo(postInfo);
+      });
+    });
   }, [id]);
   if (!postInfo) {
     return "";
@@ -34,12 +32,17 @@ function MainContent() {
         )}
         <div className="innerImage">
           <img
-            src={`https://blogcreationbackend.onrender.com/${postInfo.cover}`}
+            src={`http://localhost:4000/${postInfo.cover}`}
             alt="Not found"
           ></img>
         </div>
         <div dangerouslySetInnerHTML={{ __html: postInfo.content }} />
       </div>
+      {/* <div className="comment">
+        <Link className="commentBtn" to={`/comment/${postInfo._id}`}>
+          comment
+        </Link>
+      </div> */}
     </main>
   );
 }
