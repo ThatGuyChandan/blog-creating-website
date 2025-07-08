@@ -9,13 +9,48 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const multer = require("multer");
-const uploadMiddelware = multer({ dest: "uploads/" });
-const fs = require("fs");
+const AWS = require("aws-sdk");
+const multerS3 = require("multer-s3");
 require("dotenv").config();
-const port = process.env.PORT || 4000;
-const baseUrl = process.env.Base_URL;
-const jwt_secret = process.env.JWT_SECRET;
-const secret = `${jwt_secret}`;
+
+// AWS S3 configuration
+const s3 = new AWS.S3({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION,
+});
+
+function deleteS3Image(imageUrl) {
+  if (!imageUrl) return;
+  // Extract the S3 key from the URL
+  const urlParts = imageUrl.split("/");
+  const key = urlParts.slice(3).join("/"); // works for standard S3 URLs
+  const params = {
+    Bucket: process.env.AWS_S3_BUCKET_NAME,
+    Key: key,
+  };
+  s3.deleteObject(params, (err, data) => {
+    if (err) {
+      console.error("Failed to delete image from S3:", err);
+    }
+  });
+}
+
+const uploadMiddelware = multer({
+  storage: multerS3({
+    s3: s3,
+    bucket: process.env.AWS_S3_BUCKET_NAME,
+    // acl: "public-read", // Remove this line for buckets with ACLs disabled
+    metadata: function (req, file, cb) {
+      cb(null, { fieldName: file.fieldname });
+    },
+    key: function (req, file, cb) {
+      const ext = file.originalname.split(".").pop();
+      cb(null, Date.now() + "-" + file.originalname);
+    },
+  }),
+});
+
 mongoose
   .connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
@@ -29,7 +64,7 @@ mongoose
   });
 app.use(
   cors({
-    origin: `${baseUrl}`,
+    origin: `${process.env.Base_URL}`,
     credentials: true,
   })
 );
@@ -64,13 +99,24 @@ app.post("/login", async (req, res) => {
 
   const passOk = bcrypt.compareSync(password, userDoc.password);
   if (passOk) {
-    jwt.sign({ username, id: userDoc._id }, secret, {}, (err, token) => {
-      if (err) throw err;
-      res.cookie("token", token).json({
-        id: userDoc._id,
-        username,
-      });
-    });
+    // Set JWT to expire in 1 hour
+    jwt.sign(
+      { username, id: userDoc._id },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" },
+      (err, token) => {
+        if (err) throw err;
+        res.cookie("token", token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          maxAge: 60 * 60 * 1000, // 1 hour in ms
+        }).json({
+          id: userDoc._id,
+          username,
+        });
+      }
+    );
   } else {
     res.status(400).json({ error: "Password or username is wrong" });
   }
@@ -78,7 +124,7 @@ app.post("/login", async (req, res) => {
 //profile
 app.get("/profile", (req, res) => {
   const { token } = req.cookies;
-  jwt.verify(token, secret, {}, (err, info) => {
+  jwt.verify(token, process.env.JWT_SECRET, {}, (err, info) => {
     if (err) {
       // Handle the error, e.g., send an error response
       res.status(401).json({ error: "Unauthorized" });
@@ -89,50 +135,58 @@ app.get("/profile", (req, res) => {
 });
 //logout
 app.post("/logout", (req, res) => {
-  res.cookie("token", "").json("ok");
+  res.cookie("token", "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 0,
+  }).json("ok");
 });
 //create post
-app.post("/post", uploadMiddelware.single("file"), async (req, res) => {
-  if (req.file) {
-    const { originalname, path } = req.file;
-    const parts = originalname.split(".");
-    const ext = parts[parts.length - 1];
-    const newPath = path + "." + ext;
-    fs.renameSync(path, newPath);
-
+app.post("/post", (req, res, next) => {
+  uploadMiddelware.single("file")(req, res, function (err) {
+    if (err) {
+      console.error("Upload error:", err);
+      return res.status(400).json({ error: err.message || "File upload failed" });
+    }
+    // Remove strict file requirement: allow post without image
+    // if (!req.file) {
+    //   return res.status(400).json({ error: "File not uploaded" });
+    // }
+    const fileUrl = req.file ? req.file.location : null;
     const { token } = req.cookies;
-    jwt.verify(token, secret, {}, async (err, info) => {
+    jwt.verify(token, process.env.JWT_SECRET, {}, async (err, info) => {
       if (err) {
-        res.status(401).json({ error: "Unauthorized" });
-      } else {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      try {
         const { title, summary, content } = req.body;
+        if (!title || !summary || !content) {
+          return res.status(400).json({ error: "All fields are required." });
+        }
         const postDoc = await Post.create({
           title,
           summary,
           content,
-          cover: newPath,
+          cover: fileUrl, // will be null if no image
           author: info.id,
         });
         res.json({ postDoc });
+      } catch (error) {
+        console.error("Post creation error:", error);
+        res.status(400).json({ error: error.message || "Failed to create post" });
       }
     });
-  } else {
-    res.status(400).json({ error: "File not uploaded" });
-  }
+  });
 });
 //edit post
 app.put("/post", uploadMiddelware.single("file"), async (req, res) => {
-  let newPath = null;
+  let fileUrl = null;
   if (req.file) {
-    const { originalname, path } = req.file;
-    const parts = originalname.split(".");
-    const ext = parts[parts.length - 1];
-    newPath = path + "." + ext;
-    fs.renameSync(path, newPath);
+    fileUrl = req.file.location;
   }
-
   const { token } = req.cookies;
-  jwt.verify(token, secret, {}, async (err, info) => {
+  jwt.verify(token, process.env.JWT_SECRET, {}, async (err, info) => {
     if (err) throw err;
     const { id, title, summary, content } = req.body;
     const postDoc = await Post.findById(id);
@@ -140,24 +194,32 @@ app.put("/post", uploadMiddelware.single("file"), async (req, res) => {
     if (!isAuthor) {
       return res.status(400).json("you are not the author");
     }
+    // If a new image is uploaded, delete the old one from S3
+    if (fileUrl && postDoc.cover && postDoc.cover !== fileUrl) {
+      deleteS3Image(postDoc.cover);
+    }
     await postDoc.updateOne({
       title,
       summary,
       content,
-      cover: newPath ? newPath : postDoc.cover,
+      cover: fileUrl ? fileUrl : postDoc.cover,
     });
-
     res.json(postDoc);
   });
 });
 
 app.get("/post", async (req, res) => {
-  res.json(
-    await Post.find()
-      .populate("author", ["username"])
-      .sort({ createdAt: -1 })
-      .limit(20)
-  );
+  try {
+    res.json(
+      await Post.find()
+        .populate("author", ["username"])
+        .sort({ createdAt: -1 })
+        .limit(20)
+    );
+  } catch (error) {
+    console.error("Error fetching posts:", error);
+    res.status(500).json({ error: "Failed to fetch posts" });
+  }
 });
 
 app.get("/post/:id", async (req, res) => {
@@ -166,6 +228,98 @@ app.get("/post/:id", async (req, res) => {
   res.json(postDoc);
 });
 
+// Delete post by ID (author only)
+app.delete("/post/:id", async (req, res) => {
+  const { token } = req.cookies;
+  jwt.verify(token, process.env.JWT_SECRET, {}, async (err, info) => {
+    if (err) return res.status(401).json({ error: "Unauthorized" });
+    const { id } = req.params;
+    try {
+      const post = await Post.findById(id);
+      if (!post) return res.status(404).json({ error: "Post not found" });
+      if (String(post.author) !== String(info.id)) {
+        return res.status(403).json({ error: "You are not the author" });
+      }
+      // Delete the image from S3 if it exists
+      if (post.cover) {
+        deleteS3Image(post.cover);
+      }
+      await Post.findByIdAndDelete(id);
+      res.json({ success: true });
+    } catch (e) {
+      res.status(400).json({ error: "Failed to delete post" });
+    }
+  });
+});
+
+// Update profile (username/password)
+app.put("/profile", async (req, res) => {
+  const { token } = req.cookies;
+  jwt.verify(token, process.env.JWT_SECRET, {}, async (err, info) => {
+    if (err) return res.status(401).json({ error: "Unauthorized" });
+    const { username, password } = req.body;
+    try {
+      const userDoc = await User.findById(info.id);
+      if (!userDoc) return res.status(404).json({ error: "User not found" });
+      if (username && username !== userDoc.username) {
+        // Check if username is taken
+        const existing = await User.findOne({ username });
+        if (existing) return res.status(400).json({ error: "Username already taken" });
+        userDoc.username = username;
+      }
+      if (password && password.length > 0) {
+        userDoc.password = bcrypt.hashSync(password, salt);
+      }
+      await userDoc.save();
+      res.json({ id: userDoc._id, username: userDoc.username });
+    } catch (e) {
+      res.status(400).json({ error: "Failed to update profile" });
+    }
+  });
+});
+
+// Confirm password for profile update
+app.post("/profile", async (req, res) => {
+  const { token } = req.cookies;
+  jwt.verify(token, process.env.JWT_SECRET, {}, async (err, info) => {
+    if (err) return res.status(401).json({ error: "Unauthorized" });
+    const { password } = req.body;
+    try {
+      const userDoc = await User.findById(info.id);
+      if (!userDoc) return res.status(404).json({ error: "User not found" });
+      const passOk = bcrypt.compareSync(password, userDoc.password);
+      if (!passOk) return res.status(401).json({ error: "Incorrect password" });
+      res.json({ success: true });
+    } catch (e) {
+      res.status(400).json({ error: "Failed to confirm password" });
+    }
+  });
+});
+
+// Search posts by keyword in title, summary, or content
+app.get("/search", async (req, res) => {
+  const { query } = req.query;
+  if (!query || !query.trim()) {
+    return res.json([]);
+  }
+  try {
+    const posts = await Post.find({
+      $or: [
+        { title: { $regex: query, $options: "i" } },
+        { summary: { $regex: query, $options: "i" } },
+        { content: { $regex: query, $options: "i" } },
+      ],
+    })
+      .populate("author", ["username"])
+      .sort({ createdAt: -1 });
+    res.json(posts);
+  } catch (error) {
+    console.error("Search error:", error);
+    res.status(500).json({ error: "Failed to search posts" });
+  }
+});
+
+const port = process.env.PORT || 4000;
 app.listen(port, () => {
   console.log(`Server is listening on port ${port}`);
 });

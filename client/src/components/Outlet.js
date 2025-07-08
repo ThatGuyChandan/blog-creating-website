@@ -7,6 +7,8 @@ import CreatePost from "./CreatePost";
 import MainContent from "./MainContent";
 import EditPost from "./EditPost";
 import NotFound from "./NotFound";
+import Profile from "./Profile";
+import MyBlog from "./MyBlog";
 const Outlet = () => {
   return (
     <Routes>
@@ -23,6 +25,8 @@ const Outlet = () => {
       <Route path={"/create"} element={<CreatePost />} />
       <Route path={"/post/:id"} element={<MainContent />} />
       <Route path={"/edit/:id"} element={<EditPost />} />
+      <Route path={"/profile"} element={<Profile />} />
+      <Route path={"/my-blog"} element={<MyBlog />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

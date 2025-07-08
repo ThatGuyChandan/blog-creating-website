@@ -1,12 +1,13 @@
-import React, { useContext, useEffect } from "react";
-import { Link } from "react-router-dom";
+import React, { useContext, useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { UserContext } from "./UserContext";
 
 const Navbar = () => {
   const { setUserInfo, userInfo } = useContext(UserContext);
+  const API_URL = process.env.REACT_APP_API_URL;
 
   useEffect(() => {
-    fetch("http://localhost:4000/profile", {
+    fetch(`${API_URL}/profile`, {
       credentials: "include",
     }).then((response) => {
       response.json().then((userInfo) => {
@@ -16,7 +17,7 @@ const Navbar = () => {
   }, [setUserInfo]);
 
   function logout() {
-    fetch("http://localhost:4000/logout", {
+    fetch(`${API_URL}/logout`, {
       credentials: "include",
       method: "POST",
     });
