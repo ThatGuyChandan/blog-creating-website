@@ -5,7 +5,7 @@ export function UserContextProvider({ children }) {
   const [userInfo, setUserInfo] = useState({});
 
   useEffect(() => {
-    fetch("http://localhost:4000/profile", {
+    fetch(`${process.env.REACT_APP_API_URL}/profile`, {
       credentials: "include",
     })
       .then((res) => res.json())

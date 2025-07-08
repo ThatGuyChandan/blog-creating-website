@@ -32,7 +32,7 @@ const Post = () => {
   const [posts, setPosts] = useState([]);
   const { userInfo } = useContext(UserContext);
   useEffect(() => {
-    fetch("http://localhost:4000/post").then((response) => {
+    fetch(`${process.env.REACT_APP_API_URL}/post`).then((response) => {
       response.json().then((posts) => {
         setPosts(posts);
       });

@@ -18,7 +18,7 @@ function Profile() {
   async function handleConfirmPassword(e) {
     e.preventDefault();
     setMessage("");
-    const response = await fetch("http://localhost:4000/profile", {
+    const response = await fetch(`${process.env.REACT_APP_API_URL}/profile`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -35,7 +35,7 @@ function Profile() {
   async function handleUpdateProfile(e) {
     e.preventDefault();
     setMessage("");
-    const response = await fetch(`http://localhost:4000/profile`, {
+    const response = await fetch(`${process.env.REACT_APP_API_URL}/profile`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       credentials: "include",

@@ -7,7 +7,7 @@ function Content({ title, _id, summary, cover, content, createdAt, author }) {
     <div className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-shadow duration-300 flex flex-col overflow-hidden">
       <Link to={`/post/${_id}`} className="block h-56 overflow-hidden">
         <img
-          src={cover && (cover.startsWith('http') ? cover : 'http://localhost:4000/' + cover)}
+          src={cover && (cover.startsWith('http') ? cover : process.env.REACT_APP_API_URL + '/' + cover)}
           alt={title}
           className="w-full h-full object-cover object-center transition-transform duration-300 hover:scale-105"
         />

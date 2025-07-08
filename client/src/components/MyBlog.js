@@ -8,7 +8,7 @@ function MyBlog() {
 
   useEffect(() => {
     if (userInfo && userInfo.id) {
-      fetch("http://localhost:4000/post")
+      fetch(`${process.env.REACT_APP_API_URL}/post`)
         .then((res) => res.json())
         .then((allPosts) => {
           const myPosts = allPosts.filter((p) => p.author && p.author._id === userInfo.id);
