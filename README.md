@@ -16,6 +16,18 @@ A modern, full-stack blog platform with rich text editing, image uploads (AWS S3
 - **Image Storage:** AWS S3 (via multer-s3)
 - **Authentication:** JWT, httpOnly cookies
 
+## AI Features & Models Used
+- **AI-Powered Title & Summary Suggestions:**
+  - When creating a post, users can get AI-generated suggestions for both the post title and summary based on their content.
+  - These features are available via the "Suggest Title" and "Suggest Summary" buttons in the post creation form.
+- **LLM & Provider:**
+  - Uses the [Hugging Face Inference API](https://huggingface.co/inference-api) via the `@huggingface/inference` npm package.
+  - Model: `meta-llama/Llama-3.1-8B-Instruct` (accessed through the Fireworks AI provider).
+  - The backend securely calls the LLM to generate concise, relevant titles and summaries for blog content.
+- **Security & Rate Limiting:**
+  - API endpoints for AI features are rate-limited per IP to prevent abuse.
+  - Requires a valid Hugging Face API token (set in backend `.env`).
+
 ## Getting Started
 
 ### 1. Clone the repository
