@@ -33,7 +33,7 @@ A modern, full-stack blog platform with rich text editing, image uploads (AWS S3
 ### 1. Clone the repository
 ```bash
 git clone <your-repo-url>
-cd BlogWeb/blog-creating-website
+cd blog-creating-website
 ```
 
 ### 2. Setup Environment Variables
