@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useContext } from "react";
 import { UserContext } from "./UserContext";
 
-const ADMIN_EMAIL = process.env.REACT_APP_ADMIN_EMAIL || "chandanthakur.k123@gmail.com";
+const ADMIN_EMAIL = process.env.REACT_APP_ADMIN_EMAIL;
 
 function AdminPanel() {
   const { userInfo } = useContext(UserContext);
