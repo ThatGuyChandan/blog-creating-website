@@ -10,6 +10,7 @@ import EditPost from "./components/EditPost";
 import NotFound from "./components/NotFound";
 import Profile from "./components/Profile";
 import MyBlog from "./components/MyBlog";
+import AdminPanel from "./components/AdminPanel";
 
 function Navbar() {
   const { userInfo, setUserInfo } = useContext(UserContext);
@@ -123,6 +124,7 @@ function App() {
             <Route path="/edit/:id" element={<EditPost />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/my-blog" element={<MyBlog />} />
+            <Route path="/admin" element={<AdminPanel />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>

@@ -5,28 +5,41 @@ function Register() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [email, setEmail] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const [redirect, setRedirect] = useState(false);
+  const [successMsg, setSuccessMsg] = useState("");
 
   async function handleRegister(ev) {
     ev.preventDefault();
     setError("");
+    setSuccessMsg("");
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
       return;
     }
-    const response = await fetch(`${process.env.REACT_APP_API_URL}/register`, {
-      method: "POST",
-      body: JSON.stringify({ username, password }),
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-    });
-    if (response.ok) {
-      setRedirect(true);
-    } else {
-      alert("Registration failed. Please try a different username.");
+    if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/register`, {
+        method: "POST",
+        body: JSON.stringify({ username, password, email }),
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setSuccessMsg(data.message || "Registration request submitted. Await admin approval.");
+        setUsername(""); setPassword(""); setConfirmPassword(""); setEmail("");
+      } else {
+        setError(data.error || "Registration failed. Please try a different username or email.");
+      }
+    } catch (err) {
+      setError("Registration failed. Please try again later.");
     }
   }
 
@@ -35,15 +48,23 @@ function Register() {
   }
 
   return (
-    <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-8 mt-16 mb-10">
+    <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-8 mt-10 mb-10">
       <h2 className="text-3xl font-bold mb-6 text-center text-blue-600">Register</h2>
       {error && <div className="mb-4 text-red-600 text-center font-semibold">{error}</div>}
+      {successMsg && <div className="mb-4 text-green-600 text-center font-semibold">{successMsg}</div>}
       <form onSubmit={handleRegister} className="space-y-6">
         <input
           type="text"
           placeholder="Username"
           value={username}
           onChange={(ev) => setUsername(ev.target.value)}
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-lg"
+        />
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(ev) => setEmail(ev.target.value)}
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-lg"
         />
         <div className="relative">
@@ -73,7 +94,6 @@ function Register() {
             )}
           </button>
         </div>
-        <label className="block font-medium text-gray-700 mb-1">Confirm Password</label>
         <div className="relative">
           <input
             type={showConfirmPassword ? "text" : "password"}
@@ -87,7 +107,7 @@ function Register() {
             tabIndex={-1}
             className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-blue-600 focus:outline-none"
             onClick={() => setShowConfirmPassword((v) => !v)}
-            aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+            aria-label={showConfirmPassword ? "Hide password" : "Show password"}
           >
             {showConfirmPassword ? (
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
@@ -108,6 +128,9 @@ function Register() {
           Register
         </button>
       </form>
+      <div className="mt-4 text-gray-500 text-sm text-center">
+        After submitting, your account will be reviewed by an admin. You will receive an email when your account is approved.
+      </div>
     </div>
   );
 }

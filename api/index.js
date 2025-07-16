@@ -7,6 +7,53 @@ const salt = bcrypt.genSaltSync(10);
 const app = express();
 const cors = require("cors");
 require("dotenv").config();
+const nodemailer = require("nodemailer");
+
+// Email setup (configure these environment variables in production)
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || 'smtp.example.com',
+  port: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 587,
+  secure: false, // true for 465, false for other ports
+  auth: {
+    user: process.env.SMTP_USER || 'your@email.com',
+    pass: process.env.SMTP_PASS || 'password',
+  },
+});
+
+async function sendUserStatusEmail(user, status) {
+  let subject = '', text = '';
+  if (status === 'active') {
+    subject = 'Your account has been approved!';
+    text = `Hello ${user.username},\n\nYour account on BlogWeb has been approved. You can now log in and start using the site!`;
+  } else if (status === 'rejected') {
+    subject = 'Your registration was rejected';
+    text = `Hello ${user.username},\n\nWe are sorry, but your registration on BlogWeb was rejected. If you believe this is a mistake, please contact the admin.`;
+  }
+  if (!user.email) return;
+  try {
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || 'no-reply@blogweb.com',
+      to: user.email,
+      subject,
+      text,
+    });
+  } catch (err) {
+    console.error('Failed to send email:', err);
+  }
+}
+
+async function sendAdminNewUserEmail(user) {
+  try {
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || 'no-reply@blogweb.com',
+      to: 'chandanthakur.k123@gmail.com',
+      subject: 'New User Registration Request',
+      text: `A new user has registered and is pending approval.\n\nUsername: ${user.username}\nEmail: ${user.email}`,
+    });
+  } catch (err) {
+    console.error('Failed to send admin notification email:', err);
+  }
+}
 
 app.use(cors({
   origin: process.env.Base_URL,
@@ -24,7 +71,19 @@ const { InferenceClient } = require('@huggingface/inference');
 const HF_TOKEN = process.env.HUGGING_FACE_TOKEN;
 const client = new InferenceClient(HF_TOKEN);
 const aiRateLimit = {};
-// ... existing code ...
+
+function adminAuthMiddleware(req, res, next) {
+  const { token } = req.cookies;
+  jwt.verify(token, process.env.JWT_SECRET, {}, async (err, info) => {
+    if (err || !info) return res.status(401).json({ error: 'Unauthorized' });
+    const user = await User.findById(info.id);
+    if (!user || user.email !== process.env.ADMIN_EMAIL) {
+      return res.status(403).json({ error: 'Access denied: Admins only' });
+    }
+    req.user = user;
+    next();
+  });
+}
 
 app.post('/ai/suggest-summary', async (req, res) => {
   const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
@@ -160,16 +219,24 @@ app.use("/uploads", express.static(__dirname + "/uploads"));
 
 //register
 app.post("/register", async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, email } = req.body;
   try {
     const userDoc = await User.create({
       username,
       password: bcrypt.hashSync(password, salt),
+      email,
+      status: 'pending',
     });
-    res.status(201).json(userDoc);
+    await sendAdminNewUserEmail(userDoc);
+    res.status(201).json({ message: 'Registration request submitted. Await admin approval.', user: { username: userDoc.username, email: userDoc.email } });
   } catch (error) {
     console.error(error);
-    res.status(400).json({ error: "Failed to register" });
+    let msg = 'Failed to register';
+    if (error.code === 11000) {
+      if (error.keyPattern && error.keyPattern.email) msg = 'Email already in use';
+      else if (error.keyPattern && error.keyPattern.username) msg = 'Username already in use';
+    }
+    res.status(400).json({ error: msg });
   }
 });
 //login
@@ -181,6 +248,13 @@ app.post("/login", async (req, res) => {
   if (!userDoc) {
     res.status(400).json({ error: "User not found" });
     return;
+  }
+
+  if (userDoc.status === 'pending') {
+    return res.status(403).json({ error: "Your account is pending admin approval." });
+  }
+  if (userDoc.status === 'rejected') {
+    return res.status(403).json({ error: "Your registration was rejected. Please contact the admin." });
   }
 
   const passOk = bcrypt.compareSync(password, userDoc.password);
@@ -199,7 +273,8 @@ app.post("/login", async (req, res) => {
           maxAge: 60 * 60 * 1000, // 1 hour in ms
         }).json({
           id: userDoc._id,
-          username,
+          username: userDoc.username,
+          email: userDoc.email,
         });
       }
     );
@@ -210,12 +285,17 @@ app.post("/login", async (req, res) => {
 //profile
 app.get("/profile", (req, res) => {
   const { token } = req.cookies;
-  jwt.verify(token, process.env.JWT_SECRET, {}, (err, info) => {
+  jwt.verify(token, process.env.JWT_SECRET, {}, async (err, info) => {
     if (err) {
-      // Handle the error, e.g., send an error response
       res.status(401).json({ error: "Unauthorized" });
     } else {
-      res.json(info);
+      const userDoc = await User.findById(info.id);
+      if (!userDoc) return res.status(404).json({ error: "User not found" });
+      res.json({
+        id: userDoc._id,
+        username: userDoc.username,
+        email: userDoc.email,
+      });
     }
   });
 });
@@ -382,6 +462,40 @@ app.post("/profile", async (req, res) => {
   });
 });
 
+// --- Admin Endpoints ---
+// List all users (for admin panel)
+app.get('/admin/users', adminAuthMiddleware, async (req, res) => {
+  try {
+    const users = await User.find({}, '-password'); // Exclude password
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+// Approve user
+app.post('/admin/users/:id/approve', adminAuthMiddleware, async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(req.params.id, { status: 'active' }, { new: true });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    await sendUserStatusEmail(user, 'active');
+    res.json({ message: 'User approved', user });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to approve user' });
+  }
+});
+
+// Reject user
+app.post('/admin/users/:id/reject', adminAuthMiddleware, async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(req.params.id, { status: 'rejected' }, { new: true });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    await sendUserStatusEmail(user, 'rejected');
+    res.json({ message: 'User rejected', user });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to reject user' });
+  }
+});
 
 
 const port = process.env.PORT || 4000;

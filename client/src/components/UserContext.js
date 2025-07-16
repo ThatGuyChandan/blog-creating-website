@@ -11,7 +11,7 @@ export function UserContextProvider({ children }) {
       .then((res) => res.json())
       .then((data) => {
         if (data && data.username) {
-          setUserInfo(data);
+          setUserInfo(data); // data now includes email
         }
       })
       .catch(() => {});

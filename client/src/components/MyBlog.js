@@ -5,6 +5,7 @@ import Content from "./Content";
 function MyBlog() {
   const { userInfo } = useContext(UserContext);
   const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (userInfo && userInfo.id) {
@@ -13,7 +14,10 @@ function MyBlog() {
         .then((allPosts) => {
           const myPosts = allPosts.filter((p) => p.author && p.author._id === userInfo.id);
           setPosts(myPosts);
+          setLoading(false);
         });
+    } else {
+      setLoading(false);
     }
   }, [userInfo]);
 
@@ -36,7 +40,11 @@ function MyBlog() {
           <div className="text-gray-500 text-sm">My Blog</div>
         </div>
       </div>
-      {posts.length === 0 ? (
+      {loading ? (
+        <div className="flex justify-center items-center py-20">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent"></div>
+        </div>
+      ) : posts.length === 0 ? (
         <div className="text-center text-gray-400 py-10 text-lg">You haven't posted anything yet.</div>
       ) : (
         <div className="grid gap-8 grid-cols-1">

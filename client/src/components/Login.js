@@ -8,10 +8,12 @@ function Login() {
   const [password, setPassword] = useState("");
   const [redirect, setRedirect] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
   const { setUserInfo } = useContext(UserContext);
 
   async function handleLogin(ev) {
     ev.preventDefault();
+    setError("");
     const response = await fetch(`${process.env.REACT_APP_API_URL}/login`, {
       method: "POST",
       body: JSON.stringify({ username, password }),
@@ -23,7 +25,8 @@ function Login() {
       setUserInfo(userInfo);
       setRedirect(true);
     } else {
-      alert("Login failed. Please check your credentials.");
+      const data = await response.json();
+      setError(data.error || "Login failed. Please check your credentials.");
     }
   }
 
@@ -34,6 +37,7 @@ function Login() {
   return (
     <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-8 mt-16 mb-10">
       <h2 className="text-3xl font-bold mb-6 text-center text-blue-600">Login</h2>
+      {error && <div className="mb-4 text-red-600 text-center font-semibold">{error}</div>}
       <form onSubmit={handleLogin} className="space-y-6">
         <input
           type="text"
