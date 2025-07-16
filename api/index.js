@@ -11,12 +11,12 @@ const nodemailer = require("nodemailer");
 
 // Email setup (configure these environment variables in production)
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.example.com',
-  port: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 587,
+  host: process.env.SMTP_HOST ,
+  port: process.env.SMTP_PORT ,
   secure: false, // true for 465, false for other ports
   auth: {
-    user: process.env.SMTP_USER || 'your@email.com',
-    pass: process.env.SMTP_PASS || 'password',
+    user: process.env.SMTP_USER ,
+    pass: process.env.SMTP_PASS ,
   },
 });
 
@@ -32,7 +32,7 @@ async function sendUserStatusEmail(user, status) {
   if (!user.email) return;
   try {
     await transporter.sendMail({
-      from: process.env.SMTP_FROM || 'no-reply@blogweb.com',
+      from: process.env.SMTP_FROM ,
       to: user.email,
       subject,
       text,
@@ -45,8 +45,8 @@ async function sendUserStatusEmail(user, status) {
 async function sendAdminNewUserEmail(user) {
   try {
     await transporter.sendMail({
-      from: process.env.SMTP_FROM || 'no-reply@blogweb.com',
-      to: 'chandanthakur.k123@gmail.com',
+      from: process.env.SMTP_FROM ,
+      to: process.env.ADMIN_EMAIL,
       subject: 'New User Registration Request',
       text: `A new user has registered and is pending approval.\n\nUsername: ${user.username}\nEmail: ${user.email}`,
     });
@@ -268,8 +268,8 @@ app.post("/login", async (req, res) => {
         if (err) throw err;
         res.cookie("token", token, {
           httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
+          secure: true, // must be true for HTTPS
+          sameSite: "none", // must be 'none' for cross-site cookies
           maxAge: 60 * 60 * 1000, // 1 hour in ms
         }).json({
           id: userDoc._id,
