@@ -57,13 +57,13 @@ SMTP_PORT=587
 SMTP_USER=your@email.com
 SMTP_PASS=your_smtp_password_or_app_password
 SMTP_FROM=your@email.com
-ADMIN_EMAIL=chandanthakur.k123@gmail.com
+ADMIN_EMAIL=your@email.com
 ```
 
 #### Frontend (`client/.env`):
 ```
 REACT_APP_API_URL=http://localhost:4000 # or your deployed backend URL
-REACT_APP_ADMIN_EMAIL=chandanthakur.k123@gmail.com
+REACT_APP_ADMIN_EMAIL=your@email.com
 ```
 
 ### 3. Install Dependencies
