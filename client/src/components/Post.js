@@ -30,11 +30,13 @@ const features = [
 
 const Post = () => {
   const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const { userInfo } = useContext(UserContext);
   useEffect(() => {
     fetch(`${process.env.REACT_APP_API_URL}/post`).then((response) => {
       response.json().then((posts) => {
         setPosts(posts);
+        setLoading(false);
       });
     });
   }, []);
@@ -63,15 +65,23 @@ const Post = () => {
       )}
 
       {/* Trending/Latest Section */}
-      <div className="flex items-center mb-6">
+      <div className="flex items-center gap-2 mb-4">
         <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold mr-2">Latest</span>
         <h2 className="text-2xl font-bold text-gray-800">Recent Posts</h2>
       </div>
-      <div className="grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-        {posts.length > 0 && posts.map((post) => <Content key={post._id} {...post} />)}
-      </div>
-      {posts.length === 0 && (
-        <div className="text-center text-gray-400 py-20 text-lg">No posts yet. Be the first to share your story!</div>
+      {loading ? (
+        <div className="flex justify-center items-center py-20">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-500 border-solid border-4 border-gray-200"></div>
+        </div>
+      ) : (
+        <>
+          <div className="grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+            {posts.length > 0 && posts.map((post) => <Content key={post._id} {...post} />)}
+          </div>
+          {posts.length === 0 && (
+            <div className="text-center text-gray-400 py-20 text-lg">No posts yet. Be the first to share your story!</div>
+          )}
+        </>
       )}
     </>
   );

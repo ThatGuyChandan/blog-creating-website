@@ -414,6 +414,16 @@ div.innerContent .author {
   font-size: 18px;
 }
 
+/* Loading Spinner */
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media screen and (max-width: 930px) {
   main {
     padding: 5px; /* Reduce padding for smaller screens */
