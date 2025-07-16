@@ -4,6 +4,9 @@ A modern, full-stack blog platform with rich text editing, image uploads (AWS S3
 
 ## Features
 - User registration, login, and profile management (JWT, secure cookies)
+- **Manual admin approval for new registrations** (admin must approve users before they can log in)
+- **Email notifications**: Admin notified on new registration, users notified on approval/rejection (SMTP setup required)
+- **Animated loaders** for blog and "My Blog" sections for better UX
 - Create, edit, and delete blog posts with rich text and image uploads (S3)
 - Responsive, professional UI with Tailwind CSS
 - Search posts by title, summary, or content
@@ -15,6 +18,7 @@ A modern, full-stack blog platform with rich text editing, image uploads (AWS S3
 - **Backend:** Node.js, Express, MongoDB, Mongoose
 - **Image Storage:** AWS S3 (via multer-s3)
 - **Authentication:** JWT, httpOnly cookies
+- **Email:** Nodemailer (SMTP)
 
 ## AI Features & Models Used
 - **AI-Powered Title & Summary Suggestions:**
@@ -47,11 +51,19 @@ AWS_SECRET_ACCESS_KEY=your-aws-secret-key
 AWS_REGION=your-aws-region
 AWS_S3_BUCKET_NAME=your-s3-bucket
 Base_URL=http://localhost:3000 # or your deployed frontend URL
+# Email/SMTP setup for notifications
+SMTP_HOST=smtp.yourprovider.com
+SMTP_PORT=587
+SMTP_USER=your@email.com
+SMTP_PASS=your_smtp_password_or_app_password
+SMTP_FROM=your@email.com
+ADMIN_EMAIL=chandanthakur.k123@gmail.com
 ```
 
 #### Frontend (`client/.env`):
 ```
 REACT_APP_API_URL=http://localhost:4000 # or your deployed backend URL
+REACT_APP_ADMIN_EMAIL=chandanthakur.k123@gmail.com
 ```
 
 ### 3. Install Dependencies
@@ -93,10 +105,16 @@ BlogWeb/
     client/     # Frontend (React, Tailwind)
 ```
 
+## Admin Panel & User Approval
+- Visit `/admin` after logging in as the admin (email must match `ADMIN_EMAIL` in your backend `.env`).
+- Only the admin can approve or reject new user registrations.
+- Admin receives an email when a new user registers.
+- Users receive an email when their account is approved or rejected.
+
 ## Customization & Deployment
 - Update `.env` files for production URLs and secrets.
 - Deploy backend (e.g., Heroku, AWS, Render) and frontend (e.g., Vercel, Netlify).
 - Make sure CORS and environment variables are set correctly for production.
 
 ## Summary
-BlogWeb is a full-featured, modern blog platform with secure authentication, rich content editing, image uploads, and search. Easily extensible for AI features, comments, and more. 
+BlogWeb is a full-featured, modern blog platform with secure authentication, admin approval, email notifications, rich content editing, image uploads, and search. Easily extensible for AI features, comments, and more. 
