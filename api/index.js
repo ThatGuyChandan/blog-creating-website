@@ -303,8 +303,8 @@ app.get("/profile", (req, res) => {
 app.post("/logout", (req, res) => {
   res.cookie("token", "", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: true, // must match login
+    sameSite: "none", // must match login
     maxAge: 0,
   }).json("ok");
 });
