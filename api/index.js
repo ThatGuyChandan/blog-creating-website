@@ -8,6 +8,27 @@ const app = express();
 const cors = require("cors");
 require("dotenv").config();
 const nodemailer = require("nodemailer");
+const http = require("http");
+const { Server } = require("socket.io");
+const postRouter = require('./routes/post');
+const authRouter = require('./routes/auth');
+const profileRouter = require('./routes/profile');
+const adminRouter = require('./routes/admin');
+const aiRouter = require('./routes/ai');
+
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: process.env.Base_URL,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  },
+});
+
+io.on("connection", (socket) => {
+  // Optionally log or handle connections
+});
+app.set("io", io);
 
 // Email setup (configure these environment variables in production)
 const transporter = nodemailer.createTransport({
@@ -59,6 +80,14 @@ app.use(cors({
   origin: process.env.Base_URL,
   credentials: true,
 }));
+
+// Ensure preflight requests are handled for all routes
+app.options('*', cors({
+  origin: process.env.Base_URL,
+  credentials: true,
+}));
+
+console.log('CORS origin allowed:', process.env.Base_URL);
 app.use(express.json());
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
@@ -216,290 +245,15 @@ mongoose
   });
 app.use(cookieParser());
 app.use("/uploads", express.static(__dirname + "/uploads"));
-
-//register
-app.post("/register", async (req, res) => {
-  const { username, password, email } = req.body;
-  try {
-    const userDoc = await User.create({
-      username,
-      password: bcrypt.hashSync(password, salt),
-      email,
-      status: 'pending',
-    });
-    await sendAdminNewUserEmail(userDoc);
-    res.status(201).json({ message: 'Registration request submitted. Await admin approval.', user: { username: userDoc.username, email: userDoc.email } });
-  } catch (error) {
-    console.error(error);
-    let msg = 'Failed to register';
-    if (error.code === 11000) {
-      if (error.keyPattern && error.keyPattern.email) msg = 'Email already in use';
-      else if (error.keyPattern && error.keyPattern.username) msg = 'Username already in use';
-    }
-    res.status(400).json({ error: msg });
-  }
-});
-//login
-app.post("/login", async (req, res) => {
-  const { username, password } = req.body;
-
-  const userDoc = await User.findOne({ username });
-
-  if (!userDoc) {
-    res.status(400).json({ error: "User not found" });
-    return;
-  }
-
-  if (userDoc.status === 'pending') {
-    return res.status(403).json({ error: "Your account is pending admin approval." });
-  }
-  if (userDoc.status === 'rejected') {
-    return res.status(403).json({ error: "Your registration was rejected. Please contact the admin." });
-  }
-
-  const passOk = bcrypt.compareSync(password, userDoc.password);
-  if (passOk) {
-    // Set JWT to expire in 1 hour
-    jwt.sign(
-      { username, id: userDoc._id },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" },
-      (err, token) => {
-        if (err) throw err;
-        res.cookie("token", token, {
-          httpOnly: true,
-          secure: true, // must be true for HTTPS
-          sameSite: "none", // must be 'none' for cross-site cookies
-          maxAge: 60 * 60 * 1000, // 1 hour in ms
-        }).json({
-          id: userDoc._id,
-          username: userDoc.username,
-          email: userDoc.email,
-        });
-      }
-    );
-  } else {
-    res.status(400).json({ error: "Password or username is wrong" });
-  }
-});
-//profile
-app.get("/profile", (req, res) => {
-  const { token } = req.cookies;
-  jwt.verify(token, process.env.JWT_SECRET, {}, async (err, info) => {
-    if (err) {
-      res.status(401).json({ error: "Unauthorized" });
-    } else {
-      const userDoc = await User.findById(info.id);
-      if (!userDoc) return res.status(404).json({ error: "User not found" });
-      res.json({
-        id: userDoc._id,
-        username: userDoc.username,
-        email: userDoc.email,
-      });
-    }
-  });
-});
-//logout
-app.post("/logout", (req, res) => {
-  res.cookie("token", "", {
-    httpOnly: true,
-    secure: true, // must match login
-    sameSite: "none", // must match login
-    maxAge: 0,
-  }).json("ok");
-});
-//create post
-app.post("/post", (req, res, next) => {
-  uploadMiddelware.single("file")(req, res, function (err) {
-    if (err) {
-      console.error("Upload error:", err);
-      return res.status(400).json({ error: err.message || "File upload failed" });
-    }
-    // Remove strict file requirement: allow post without image
-    // if (!req.file) {
-    //   return res.status(400).json({ error: "File not uploaded" });
-    // }
-    const fileUrl = req.file ? req.file.location : null;
-    const { token } = req.cookies;
-    jwt.verify(token, process.env.JWT_SECRET, {}, async (err, info) => {
-      if (err) {
-        return res.status(401).json({ error: "Unauthorized" });
-      }
-      try {
-        const { title, summary, content } = req.body;
-        if (!title || !summary || !content) {
-          return res.status(400).json({ error: "All fields are required." });
-        }
-        const postDoc = await Post.create({
-          title,
-          summary,
-          content,
-          cover: fileUrl, // will be null if no image
-          author: info.id,
-        });
-        res.json({ postDoc });
-      } catch (error) {
-        console.error("Post creation error:", error);
-        res.status(400).json({ error: error.message || "Failed to create post" });
-      }
-    });
-  });
-});
-//edit post
-app.put("/post", uploadMiddelware.single("file"), async (req, res) => {
-  let fileUrl = null;
-  if (req.file) {
-    fileUrl = req.file.location;
-  }
-  const { token } = req.cookies;
-  jwt.verify(token, process.env.JWT_SECRET, {}, async (err, info) => {
-    if (err) throw err;
-    const { id, title, summary, content } = req.body;
-    const postDoc = await Post.findById(id);
-    const isAuthor = JSON.stringify(postDoc.author) === JSON.stringify(info.id);
-    if (!isAuthor) {
-      return res.status(400).json("you are not the author");
-    }
-    // If a new image is uploaded, delete the old one from S3
-    if (fileUrl && postDoc.cover && postDoc.cover !== fileUrl) {
-      deleteS3Image(postDoc.cover);
-    }
-    await postDoc.updateOne({
-      title,
-      summary,
-      content,
-      cover: fileUrl ? fileUrl : postDoc.cover,
-    });
-    res.json(postDoc);
-  });
-});
-
-app.get("/post", async (req, res) => {
-  try {
-    res.json(
-      await Post.find()
-        .populate("author", ["username"])
-        .sort({ createdAt: -1 })
-        .limit(20)
-    );
-  } catch (error) {
-    console.error("Error fetching posts:", error);
-    res.status(500).json({ error: "Failed to fetch posts" });
-  }
-});
-
-app.get("/post/:id", async (req, res) => {
-  const { id } = req.params;
-  const postDoc = await Post.findById(id).populate("author", ["username"]);
-  res.json(postDoc);
-});
-
-// Delete post by ID (author only)
-app.delete("/post/:id", async (req, res) => {
-  const { token } = req.cookies;
-  jwt.verify(token, process.env.JWT_SECRET, {}, async (err, info) => {
-    if (err) return res.status(401).json({ error: "Unauthorized" });
-    const { id } = req.params;
-    try {
-      const post = await Post.findById(id);
-      if (!post) return res.status(404).json({ error: "Post not found" });
-      if (String(post.author) !== String(info.id)) {
-        return res.status(403).json({ error: "You are not the author" });
-      }
-      // Delete the image from S3 if it exists
-      if (post.cover) {
-        deleteS3Image(post.cover);
-      }
-      await Post.findByIdAndDelete(id);
-      res.json({ success: true });
-    } catch (e) {
-      res.status(400).json({ error: "Failed to delete post" });
-    }
-  });
-});
-
-// Update profile (username/password)
-app.put("/profile", async (req, res) => {
-  const { token } = req.cookies;
-  jwt.verify(token, process.env.JWT_SECRET, {}, async (err, info) => {
-    if (err) return res.status(401).json({ error: "Unauthorized" });
-    const { username, password } = req.body;
-    try {
-      const userDoc = await User.findById(info.id);
-      if (!userDoc) return res.status(404).json({ error: "User not found" });
-      if (username && username !== userDoc.username) {
-        // Check if username is taken
-        const existing = await User.findOne({ username });
-        if (existing) return res.status(400).json({ error: "Username already taken" });
-        userDoc.username = username;
-      }
-      if (password && password.length > 0) {
-        userDoc.password = bcrypt.hashSync(password, salt);
-      }
-      await userDoc.save();
-      res.json({ id: userDoc._id, username: userDoc.username });
-    } catch (e) {
-      res.status(400).json({ error: "Failed to update profile" });
-    }
-  });
-});
-
-// Confirm password for profile update
-app.post("/profile", async (req, res) => {
-  const { token } = req.cookies;
-  jwt.verify(token, process.env.JWT_SECRET, {}, async (err, info) => {
-    if (err) return res.status(401).json({ error: "Unauthorized" });
-    const { password } = req.body;
-    try {
-      const userDoc = await User.findById(info.id);
-      if (!userDoc) return res.status(404).json({ error: "User not found" });
-      const passOk = bcrypt.compareSync(password, userDoc.password);
-      if (!passOk) return res.status(401).json({ error: "Incorrect password" });
-      res.json({ success: true });
-    } catch (e) {
-      res.status(400).json({ error: "Failed to confirm password" });
-    }
-  });
-});
-
-// --- Admin Endpoints ---
-// List all users (for admin panel)
-app.get('/admin/users', adminAuthMiddleware, async (req, res) => {
-  try {
-    const users = await User.find({}, '-password'); // Exclude password
-    res.json(users);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch users' });
-  }
-});
-
-// Approve user
-app.post('/admin/users/:id/approve', adminAuthMiddleware, async (req, res) => {
-  try {
-    const user = await User.findByIdAndUpdate(req.params.id, { status: 'active' }, { new: true });
-    if (!user) return res.status(404).json({ error: 'User not found' });
-    await sendUserStatusEmail(user, 'active');
-    res.json({ message: 'User approved', user });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to approve user' });
-  }
-});
-
-// Reject user
-app.post('/admin/users/:id/reject', adminAuthMiddleware, async (req, res) => {
-  try {
-    const user = await User.findByIdAndUpdate(req.params.id, { status: 'rejected' }, { new: true });
-    if (!user) return res.status(404).json({ error: 'User not found' });
-    await sendUserStatusEmail(user, 'rejected');
-    res.json({ message: 'User rejected', user });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to reject user' });
-  }
-});
-
+app.use('/post', postRouter);
+app.use('/auth', authRouter);
+app.use('/profile', profileRouter);
+app.use('/admin', adminRouter);
+app.use('/ai', aiRouter);
 
 const port = process.env.PORT || 4000;
-app.listen(port, () => {
+server.listen(port, '0.0.0.0', () => {
   console.log(`Server is listening on port ${port}`);
 });
+
 // npm i bcryptjs cookie-parser cors dotenv express jsonwebtoken mongodb mongoose multer nodemon

@@ -17,7 +17,7 @@ const Navbar = () => {
   }, [setUserInfo]);
 
   function logout() {
-    fetch(`${API_URL}/logout`, {
+    fetch(`${API_URL}/auth/logout`, {
       credentials: "include",
       method: "POST",
     });

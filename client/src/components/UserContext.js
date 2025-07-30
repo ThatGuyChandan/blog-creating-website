@@ -8,10 +8,13 @@ export function UserContextProvider({ children }) {
     fetch(`${process.env.REACT_APP_API_URL}/profile`, {
       credentials: "include",
     })
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) return null;
+        return res.json();
+      })
       .then((data) => {
         if (data && data.username) {
-          setUserInfo(data); // data now includes email
+          setUserInfo(data);
         }
       })
       .catch(() => {});

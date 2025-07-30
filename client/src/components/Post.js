@@ -1,6 +1,7 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useContext, useRef, useCallback } from "react";
 import Content from "./Content";
 import { UserContext } from "./UserContext";
+import { io } from "socket.io-client";
 
 const HERO_BG = "bg-gradient-to-r from-blue-500 to-indigo-600 text-white";
 
@@ -28,24 +29,99 @@ const features = [
   },
 ];
 
+const SKELETON_COUNT = 6;
+
+function PostSkeleton() {
+  return (
+    <div className="bg-white rounded-xl shadow-lg flex flex-col animate-pulse overflow-hidden">
+      <div className="h-56 bg-gray-200 w-full" />
+      <div className="flex-1 flex flex-col p-6">
+        <div className="h-6 bg-gray-200 rounded w-2/3 mb-2" />
+        <div className="flex items-center space-x-2 mb-2">
+          <div className="h-4 w-16 bg-gray-200 rounded" />
+          <div className="h-4 w-8 bg-gray-200 rounded" />
+        </div>
+        <div className="h-4 bg-gray-200 rounded w-full mb-2" />
+        <div className="h-4 bg-gray-200 rounded w-5/6 mb-2" />
+        <div className="h-4 bg-gray-200 rounded w-1/2" />
+      </div>
+    </div>
+  );
+}
+
 const Post = () => {
   const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [total, setTotal] = useState(0);
+  const observer = useRef();
   const { userInfo } = useContext(UserContext);
+
+  const fetchPosts = useCallback(async (pageNum) => {
+    setLoading(true);
+    const res = await fetch(`${process.env.REACT_APP_API_URL}/post?page=${pageNum}&limit=9`);
+    const data = await res.json();
+    if (pageNum === 1) {
+      setPosts(data.posts);
+    } else {
+      setPosts((prev) => [...prev, ...data.posts]);
+    }
+    setTotal(data.total);
+    setHasMore(data.posts.length > 0 && posts.length + data.posts.length < data.total);
+    setLoading(false);
+  }, [posts.length]);
+
   useEffect(() => {
-    fetch(`${process.env.REACT_APP_API_URL}/post`).then((response) => {
-      response.json().then((posts) => {
-        setPosts(posts);
-        setLoading(false);
-      });
+    fetchPosts(page);
+    // eslint-disable-next-line
+  }, [page]);
+
+  // Real-time updates with Socket.IO
+  useEffect(() => {
+    const socket = io(process.env.REACT_APP_API_URL, {
+      withCredentials: true,
+      transports: ["websocket"],
     });
+    socket.on("new_post", (newPost) => {
+      setPosts((prev) => {
+        if (prev.some((p) => p._id === newPost._id)) return prev;
+        return [newPost, ...prev];
+      });
+      setTotal((t) => t + 1);
+    });
+    socket.on("edit_post", (updatedPost) => {
+      setPosts((prev) => prev.map((p) => (p._id === updatedPost._id ? updatedPost : p)));
+    });
+    socket.on("delete_post", (deletedId) => {
+      setPosts((prev) => prev.filter((p) => p._id !== deletedId));
+      setTotal((t) => (t > 0 ? t - 1 : 0));
+    });
+    return () => {
+      socket.disconnect();
+    };
   }, []);
+
+  const lastPostRef = useCallback(
+    (node) => {
+      if (loading) return;
+      if (observer.current) observer.current.disconnect();
+      observer.current = new window.IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          setPage((prev) => prev + 1);
+        }
+      });
+      if (node) observer.current.observe(node);
+    },
+    [loading, hasMore]
+  );
+
   const loggedIn = !!userInfo && !!userInfo.username;
   return (
     <>
       {/* Hero Section (only if logged out) */}
       {!loggedIn && (
-        <section className={`${HERO_BG} rounded-2xl shadow-lg p-10 mb-10 text-center relative overflow-hidden`}> 
+        <section className={`${HERO_BG} rounded-2xl shadow-lg p-10 mb-10 text-center relative overflow-hidden`}>
           <h1 className="text-4xl md:text-5xl font-extrabold mb-4 drop-shadow-lg">Welcome to BlogWeb</h1>
           <p className="text-lg md:text-2xl font-light mb-6 max-w-2xl mx-auto">Discover, read, and share amazing stories. Join our community or just enjoy the latest posts from everyone!</p>
           <div className="flex flex-col md:flex-row justify-center gap-6 mt-8">
@@ -69,19 +145,21 @@ const Post = () => {
         <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold mr-2">Latest</span>
         <h2 className="text-2xl font-bold text-gray-800">Recent Posts</h2>
       </div>
-      {loading ? (
-        <div className="flex justify-center items-center py-20">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent"></div>
-        </div>
-      ) : (
-        <>
-          <div className="grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {posts.length > 0 && posts.map((post) => <Content key={post._id} {...post} />)}
-          </div>
-          {posts.length === 0 && (
-            <div className="text-center text-gray-400 py-20 text-lg">No posts yet. Be the first to share your story!</div>
-          )}
-        </>
+      <div className="grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+        {posts.length > 0 && posts.map((post, i) => {
+          if (i === posts.length - 1) {
+            return <div ref={lastPostRef} key={post._id}><Content {...post} /></div>;
+          } else {
+            return <Content key={post._id} {...post} />;
+          }
+        })}
+        {loading && Array.from({ length: SKELETON_COUNT }).map((_, i) => <PostSkeleton key={i} />)}
+      </div>
+      {!loading && posts.length === 0 && (
+        <div className="text-center text-gray-400 py-20 text-lg">No posts yet. Be the first to share your story!</div>
+      )}
+      {!hasMore && posts.length > 0 && (
+        <div className="text-center text-gray-400 py-8 text-sm">No more posts to load.</div>
       )}
     </>
   );

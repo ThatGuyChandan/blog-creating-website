@@ -12,7 +12,14 @@ function MyBlog() {
       fetch(`${process.env.REACT_APP_API_URL}/post`)
         .then((res) => res.json())
         .then((allPosts) => {
-          const myPosts = allPosts.filter((p) => p.author && p.author._id === userInfo.id);
+          // Support both paginated and array response
+          const postsArr = Array.isArray(allPosts) ? allPosts : allPosts.posts;
+          if (!Array.isArray(postsArr)) {
+            setPosts([]);
+            setLoading(false);
+            return;
+          }
+          const myPosts = postsArr.filter((p) => p.author && p.author._id === userInfo.id);
           setPosts(myPosts);
           setLoading(false);
         });
@@ -20,6 +27,9 @@ function MyBlog() {
       setLoading(false);
     }
   }, [userInfo]);
+
+  // Add skeleton loader for consistency
+  const SKELETON_COUNT = 6;
 
   if (!userInfo || !userInfo.username) {
     return (
@@ -42,7 +52,9 @@ function MyBlog() {
       </div>
       {loading ? (
         <div className="flex justify-center items-center py-20">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent"></div>
+          {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
+            <div key={i} className="bg-white rounded-xl shadow-lg flex flex-col animate-pulse overflow-hidden w-full h-40 mx-2" />
+          ))}
         </div>
       ) : posts.length === 0 ? (
         <div className="text-center text-gray-400 py-10 text-lg">You haven't posted anything yet.</div>
